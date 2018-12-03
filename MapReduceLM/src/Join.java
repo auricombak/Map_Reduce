@@ -1,6 +1,7 @@
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.logging.FileHandler;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
@@ -42,6 +43,8 @@ public class Join {
 	private static final String OUTPUT_PATH = "output/Join-";
 	private static final Logger LOG = Logger.getLogger(Join.class.getName());
 
+	private static HashMap<Integer , String> ConsummersName = new HashMap<>();
+	
 	static {
 		System.setProperty("java.util.logging.SimpleFormatter.format", "%5$s%n%6$s");
 
@@ -69,11 +72,18 @@ public class Join {
 		public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException{
 			String line = value.toString();
 //			System.out.println(line);
-			String[] tokens = line.split("[|]+");
+//			System.out.println(line);
+			String[] tokens = line.split("\\|");
+//			for(String m : tokens) {
+//				System.out.print(" $ " + m);
+//			}
+//			System.out.println();
+//			System.out.println(tokens.toString());
 
 			
 			if(tokens.length == 8){
-				context.write(new Text(tokens[0]) , new Text(tokens[1]));
+//				context.write(new Text(tokens[0]) , new Text(tokens[1]));
+				ConsummersName.put(Integer.parseInt(tokens[0]), tokens[1]);
 			}else{
 				context.write(new Text(tokens[1]) , new Text(tokens[8]));
 			}
@@ -89,12 +99,18 @@ public class Join {
 		public void reduce(Text key, Iterable<Text> values, Context context)
 				throws IOException, InterruptedException {
 			//Only one element;
-			ArrayList<String> list  = new ArrayList<String>();
-			for(Text val : values) {
-				list.add(val.toString());
+			
+			String customerID = "";
+			try {
+				customerID = ConsummersName.get(Integer.parseInt(key.toString()));
+				ArrayList<String> list  = new ArrayList<String>();
+				for(Text val : values) {
+					list.add(val.toString());	
+				}
+				context.write(new Text(customerID),  new Text(list.toString()));
+			}catch(Exception e) {
+				
 			}
-
-			context.write(key,  new Text(list.toString()));
 		}
 	}
 
