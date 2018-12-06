@@ -31,8 +31,8 @@ class MapB extends Mapper<LongWritable, Text, DoubleWritable, Text> {
 		if (Arrays.equals(Tokens, emptyWords))
 			return;
 
-		if (isDouble(Tokens[0])){
-			context.write(new DoubleWritable(Double.parseDouble(Tokens[0])), new Text (Tokens[1]));
+		if (isDouble(Tokens[1])){
+			context.write(new DoubleWritable(Double.parseDouble(Tokens[1])), new Text (Tokens[0]));
 		}		
 	}
 }

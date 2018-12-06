@@ -63,11 +63,11 @@ public class TopKWordCountReverse {
 		Configuration confA = new Configuration();
 
 
-		Job jobA = new Job(confA, "Blala");
+		Job jobA = new Job(confA, "Conf1");
 
 		
 		jobA.setOutputKeyClass(Text.class);
-		jobA.setOutputValueClass(Text.class);
+		jobA.setOutputValueClass(DoubleWritable.class);
 		
 
 
@@ -88,13 +88,13 @@ public class TopKWordCountReverse {
 		Configuration confB = new Configuration();
 		confB.setInt("k", k);
 		
-		Job jobB = new Job(confB, "Blala2");
+		Job jobB = new Job(confB, "Conf2");
 		
 		/*
 		 * Affectation de la classe du comparateur au job.
 		 * Celui-ci sera appelé durant la phase de shuffle.
 		 */
-		jobB.setSortComparatorClass(DoubleInverseComparator.class);
+		// jobB.setSortComparatorClass(DoubleInverseComparator.class);
 		
 		jobB.setOutputKeyClass(DoubleWritable.class);
 		jobB.setOutputValueClass(Text.class);

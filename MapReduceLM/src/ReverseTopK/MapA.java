@@ -3,12 +3,13 @@ package ReverseTopK;
 import java.io.IOException;
 import java.util.Arrays;
 
+import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Mapper.Context;
 
-class MapA extends Mapper<LongWritable, Text, Text, Text> {
+class MapA extends Mapper<LongWritable, Text, Text, DoubleWritable> {
 
 	public static boolean isDouble( String str ){
 		  try{
@@ -30,7 +31,7 @@ class MapA extends Mapper<LongWritable, Text, Text, Text> {
 			return;
 
 		if (isDouble(oneCsvEntryTokens[20])){
-			context.write(new Text(oneCsvEntryTokens[20]), new Text(oneCsvEntry));
+			context.write(new Text(oneCsvEntryTokens[6]), new DoubleWritable(Double.parseDouble(oneCsvEntryTokens[20])));
 		}		
 	}
 }
