@@ -96,7 +96,7 @@ class Reduce extends Reducer<Text, Text, Text, DoubleWritable> {
 		
 		List tmp = new ArrayList();
 		for (Text val : values)
-			tmp.add(val);
+			tmp.add(new Text(val));
 
 
 		// Fréquence déjà présente
