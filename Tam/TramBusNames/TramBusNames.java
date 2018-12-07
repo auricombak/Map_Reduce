@@ -1,4 +1,4 @@
-package Occitanie;
+package TramBusNames;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -20,13 +20,13 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 
-//Donner un aperçu des trams et bus de la station OCCITANIE. Plus précisément, 
-//donner le nombre de (bus ou trams) pour chaque heure et ligne. Exemple : <Ligne 1, 17h, 30> (lire : à 17h, passent 30 tram de la ligne 1) 
+//Pour chaque station, donner le nombre de trams et bus par jour.
 
-public class Occitanie {
+public class TramBusNames {
+
 	private static final String INPUT_PATH = "input-TAM/";
-	private static final String OUTPUT_PATH = "output/Occitanie-";
-	private static final Logger LOG = Logger.getLogger(Occitanie.class.getName());
+	private static final String OUTPUT_PATH = "output/NbTramBus";
+	private static final Logger LOG = Logger.getLogger(TramBusNames.class.getName());
 
 	
 	static {
@@ -42,18 +42,26 @@ public class Occitanie {
 	}
 
 	public static class Map extends Mapper<LongWritable, Text, Text, IntWritable> {
-		
-		private final static IntWritable one = new IntWritable(1);
+
+		public static boolean isInteger( String str ){
+			  try{
+			    Integer.parseInt( str );
+			    return true;}
+			  catch( Exception e ){
+			    return false;
+			  }
+		}
+
 		@Override
 		public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException{
 			String line = value.toString();
 			String[] splited = line.split("\\;");
-			String stopName = splited[3];
-			String[] siplitedDate = splited[7].split(":");
-			String departure = siplitedDate[0];
-			String railNumber = splited[4];
-			if(stopName.equals("OCCITANIE"))
-				context.write(new Text(railNumber + "," + departure + "h"), one);
+			if(isInteger(splited[4])) {
+				String stopName = splited[3];
+				Integer routeShortName = Integer.parseInt(splited[4]);
+				context.write(new Text(stopName), new IntWritable(routeShortName));
+			}
+
 		}
 	}
 	
@@ -61,12 +69,15 @@ public class Occitanie {
 		@Override
 		public void reduce(Text key, Iterable<IntWritable> values, Context context)
 				throws IOException, InterruptedException {
-			int sum = 0;
-
+			int sumTram = 0;
+			int sumBus = 0;
 			for (IntWritable val : values)
-				sum += val.get();
+				if(val.get() > 4)
+					sumBus++;
+				else
+					sumTram++;
 
-			context.write(new Text("<Ligne"+key + ","+sum+">"), new Text());
+			context.write(new Text("Stop : " + key + " : " ), new Text("Nb Bus : " + sumBus + " Nb Trams : " + sumTram));
 		}
 	}
 
