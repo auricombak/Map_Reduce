@@ -1,4 +1,4 @@
-package AverageDistance;
+package AverageTips;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -46,18 +46,11 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 			if (Arrays.equals(oneCsvEntryTokens, emptyWords))
 				return;
 			
-			if(isDouble(oneCsvEntryTokens[13]) && isDouble(oneCsvEntryTokens[16])) {
-				Double tips = Double.parseDouble(oneCsvEntryTokens[13]);
-				Double total = Double.parseDouble(oneCsvEntryTokens[16]);
-				if(total != 0.0) {
-					if(tips!=0.0 ) {
-					Double ratio = (tips*100)/total;
-					context.write(new DoubleWritable(ratio), one);
-					}
-					else {
-						context.write(new DoubleWritable(0), one);
-					}
-				}
+			if(isDouble(oneCsvEntryTokens[4])) {
+				Double distance = Double.parseDouble(oneCsvEntryTokens[4]);
+
+				context.write(new DoubleWritable(distance), one);
+
 			}		
 		}
 	}
@@ -85,33 +78,24 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 			for (IntWritable val : values)
 				sum ++;
 			
-//			System.out.println("###############");
-//			System.out.println(sum);
-//			System.out.println(keyCopy);
-//			System.out.println(keyCopy*sum);
-//			System.out.println("###############");
+
 			allRatios += keyCopy*sum;
-//			System.out.println("Sum = " + sum);
 			totalBill += sum;
-//			System.out.println("totalBill = " + totalBill);
+
 		}
 
-		/**
-		 * Méthode appelée à la fin de l'étape de reduce.
-		 * 
-		 * Ici on envoie les mots dans la sortie, triés par ordre descendant.
-		 */
+
 		@Override
 		public void cleanup(Context context) throws IOException, InterruptedException {
 					System.out.println(allRatios + "&&" + totalBill);
-					context.write(new Text("Average tips ration in febuary 2018 = ") , new Text(String.format( "%.2f",allRatios/totalBill) + "%"));
+					context.write(new Text("Average trip distance in febuary = ") , new Text(String.format( "%.2f",allRatios/totalBill) + " Miles"));
 			
 		}
 	}
 	
 	public class AverageDistance {
 		private static final String INPUT_PATH = "input-Taxi/";
-		private static final String OUTPUT_PATH = "output/Tips-";
+		private static final String OUTPUT_PATH = "output/AvDistance-";
 		private static final Logger LOG = Logger.getLogger(AverageDistance.class.getName());
 
 		static {
