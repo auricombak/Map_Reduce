@@ -1,4 +1,4 @@
-package Tam;
+package MostKBusStop;
 
 
 import java.io.IOException;
@@ -29,7 +29,7 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 		private final static String emptyWords[] = { "" };
 		private final static IntWritable one = new IntWritable(1);
-
+		
 		public static boolean isInteger( String str ){
 			  try{
 			    Integer.parseInt( str );
@@ -46,11 +46,11 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 			if(isInteger(splited[4])) {
 				String stopName = splited[3];
 				Integer routeShortName = Integer.parseInt(splited[4]);
-				if(routeShortName<5) {
+				if(routeShortName>4) {
 					context.write(new Text(stopName), new IntWritable(routeShortName));
 				}
 			}
-		}
+		}	
 	}
 
 
@@ -59,21 +59,21 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 		private TreeMap<Integer , List<Text>> stationsFreq = new TreeMap<>();
 		private int nbsortedStations = 0;
 		private int k;
-
+		
 		@Override
 		public void setup(Context context) {
 			// On charge k
 			k = context.getConfiguration().getInt("k", 1);
 		}
-
-
+		
+		
 		@Override
 		public void reduce(Text key, Iterable<IntWritable> values, Context context)
 				throws IOException, InterruptedException {
-
+			
 				Integer sum = 0;
 				Text KeyCopy = new Text(key);
-
+				
 				for (IntWritable val : values)
 					sum ++;
 
@@ -93,26 +93,26 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 				// Nombre de stations enregistrés atteintes : on supprime la station la moins fréquentée (le premier dans hourFreq)
 				while (nbsortedStations > k) {
-
+					
 					Integer firstKey = stationsFreq.firstKey();
 					List<Text> stops = stationsFreq.get(firstKey);
-
+					
 					stops.remove(stops.size() - 1);
 					nbsortedStations -- ;
-
+					
 					if (stops.isEmpty()) {
 						stationsFreq.remove(firstKey);
 					}
-				}
-
-
+				} 		
+				
+				
 		}
-
+		
 		@Override
 		public void cleanup(Context context) throws IOException, InterruptedException {
-
+			
 			Integer[] nbofs = stationsFreq.keySet().toArray(new Integer[0]);
-
+			
 			// Parcours en sens inverse pour obtenir un ordre descendant
 			int i = nbofs.length;
 
@@ -121,15 +121,15 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 					context.write(new Text("The station : " + station + " is served " ), new Text( nbofs[i] + " Times" ));
 				}
 			}
-		}
+		} 
 
 	}
-
-
-	public class MostKTramStop {
+	
+	
+	public class MostKBusStop {
 		private static final String INPUT_PATH = "input-TAM/";
 		private static final String OUTPUT_PATH = "output/Station-";
-		private static final Logger LOG = Logger.getLogger(MostKTramStop.class.getName());
+		private static final Logger LOG = Logger.getLogger(MostKBusStop.class.getName());
 
 		static {
 			System.setProperty("java.util.logging.SimpleFormatter.format", "%5$s%n%6$s");
@@ -186,3 +186,5 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 	}
 }
+
+
