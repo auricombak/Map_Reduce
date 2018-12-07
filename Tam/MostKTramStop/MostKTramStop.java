@@ -1,30 +1,23 @@
-package peakHour;
+package Tam;
+
 
 import java.io.IOException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.logging.FileHandler;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
-import org.apache.hadoop.mapreduce.Mapper.Context;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
@@ -36,110 +29,107 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 		private final static String emptyWords[] = { "" };
 		private final static IntWritable one = new IntWritable(1);
+		
+		public static boolean isInteger( String str ){
+			  try{
+			    Integer.parseInt( str );
+			    return true;}
+			  catch( Exception e ){
+			    return false;
+			  }
+		}
 
-		 public static boolean isValidDate(String date) {
-		        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-		        dateFormat.setLenient(false);
-		        try {
-		            dateFormat.parse(date.trim());
-		        } catch (ParseException pe) {
-		            return false;
-		        }
-		        return true;
-		    }
-
-			@Override
-			public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException{
-
-				String line = value.toString();
-				String[] splited = line.split("\\,");
-
-				if (Arrays.equals(splited, emptyWords))
-					return;
-				if (isValidDate(splited[1])){
-
-					String [] splitDateDT = splited[1].split("\\s+");
-
-					String[] timeSplited = splitDateDT[1].split(":");
-					String hour = timeSplited[0];
-
-					context.write(new Text(hour), one);
+		@Override
+		public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException{
+			String line = value.toString();
+			String[] splited = line.split("\\;");
+			if(isInteger(splited[4])) {
+				String stopName = splited[3];
+				Integer routeShortName = Integer.parseInt(splited[4]);
+				if(routeShortName<5) {
+					context.write(new Text(stopName), new IntWritable(routeShortName));
 				}
 			}
+		}	
 	}
 
 
 	class Reduce extends Reducer<Text, IntWritable, Text, Text> {
 
-		private TreeMap<Integer , List<Text>> hourFreq = new TreeMap<>();
-		private int nbsortedHours = 0;
+		private TreeMap<Integer , List<Text>> stationsFreq = new TreeMap<>();
+		private int nbsortedStations = 0;
 		private int k;
-
+		
 		@Override
 		public void setup(Context context) {
 			// On charge k
 			k = context.getConfiguration().getInt("k", 1);
 		}
-
-
+		
+		
 		@Override
 		public void reduce(Text key, Iterable<IntWritable> values, Context context)
 				throws IOException, InterruptedException {
-
+			
 				Integer sum = 0;
 				Text KeyCopy = new Text(key);
-
+				
 				for (IntWritable val : values)
 					sum ++;
 
 
 				// Fréquence déjà présente
-				if (hourFreq.containsKey(sum))
-					hourFreq.get(sum).add(KeyCopy);
-					nbsortedHours++;
+				if (stationsFreq.containsKey(sum)) {
+					stationsFreq.get(sum).add(KeyCopy);
+					nbsortedStations++;
+				}
 				else {
-					List<Text> hours = new ArrayList<>();
-					hours.add(KeyCopy);
-					hourFreq.put(sum, hours);
-					nbsortedHours+=hours.size();
+					List<Text> stops = new ArrayList<>();
+					stops.add(KeyCopy);
+					stationsFreq.put(sum, stops);
+					nbsortedStations+=stops.size();
 				}
 
 
-				// Nombre d'heures enregistrés atteintes : on supprime l'heure la moins fréquente (le premier dans hourFreq)
-				while (nbsortedHours > k) {
-					Integer firstKey = hourFreq.firstKey();
-					List<Text> hours = hourFreq.get(firstKey);
-					hours.remove(hours.size() - 1);
-					nbsortedHours -- ;
-
-					if (hours.isEmpty())
-						hourFreq.remove(firstKey);
-				}
-
+				// Nombre de stations enregistrés atteintes : on supprime la station la moins fréquentée (le premier dans hourFreq)
+				while (nbsortedStations > k) {
+					
+					Integer firstKey = stationsFreq.firstKey();
+					List<Text> stops = stationsFreq.get(firstKey);
+					
+					stops.remove(stops.size() - 1);
+					nbsortedStations -- ;
+					
+					if (stops.isEmpty()) {
+						stationsFreq.remove(firstKey);
+					}
+				} 		
+				
+				
 		}
-
+		
 		@Override
 		public void cleanup(Context context) throws IOException, InterruptedException {
-
-			Integer[] nbofs = hourFreq.keySet().toArray(new Integer[0]);
-
+			
+			Integer[] nbofs = stationsFreq.keySet().toArray(new Integer[0]);
+			
 			// Parcours en sens inverse pour obtenir un ordre descendant
 			int i = nbofs.length;
 
 			while (i-- != 0) {
-				for (Text hour : hourFreq.get(nbofs[i])) {
-					context.write(new Text("From " + hour + " h during one hour " ), new Text( nbofs[i] + " Taxis in activity" ));
+				for (Text station : stationsFreq.get(nbofs[i])) {
+					context.write(new Text("The station : " + station + " is served " ), new Text( nbofs[i] + " Times" ));
 				}
 			}
-		}
+		} 
 
 	}
-
-
-	public class PeakHour {
-		private static final String INPUT_PATH = "input-Taxi/";
-		private static final String OUTPUT_PATH = "output/PeakHour-";
-		private static final Logger LOG = Logger.getLogger(PeakHour.class.getName());
+	
+	
+	public class MostKTramStop {
+		private static final String INPUT_PATH = "input-TAM/";
+		private static final String OUTPUT_PATH = "output/Station-";
+		private static final Logger LOG = Logger.getLogger(MostTramStation.class.getName());
 
 		static {
 			System.setProperty("java.util.logging.SimpleFormatter.format", "%5$s%n%6$s");
@@ -196,3 +186,5 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 	}
 }
+
+
