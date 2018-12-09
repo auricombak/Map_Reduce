@@ -11,17 +11,17 @@ import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.Reducer.Context;
 
 class ReduceB extends Reducer<DoubleWritable, Text, DoubleWritable, Text> {
-	
 
-	
+
+
 	/**
 	 * Map avec tri suivant l'ordre naturel de la clé (la clé représentant la fréquence d'un ou plusieurs mots).
 	 * Utilisé pour conserver les k mots les plus fréquents.
-	 * 
+	 *
 	 * Il associe une fréquence à une liste de mots.
 	 */
 	private LinkedHashMap<Double, List<Text>> sortedLineProfil = new LinkedHashMap<>();
-	private int nbsortedWords = 0;
+	private int nbClients = 0;
 	private int k;
 
 	/**
@@ -36,13 +36,13 @@ class ReduceB extends Reducer<DoubleWritable, Text, DoubleWritable, Text> {
 	@Override
 	public void reduce(DoubleWritable key, Iterable<Text> values, Context context)
 			throws IOException, InterruptedException {
-		
-		
+
+
 		System.out.println(key.toString());
-		
+
 		// On copie car l'objet key reste le même entre chaque appel du reducer
 		Double keyCopy = key.get();
-		
+
 		List tmp = new ArrayList();
 		for (Text val : values)
 			tmp.add(new Text(val));
@@ -52,29 +52,28 @@ class ReduceB extends Reducer<DoubleWritable, Text, DoubleWritable, Text> {
 		if (sortedLineProfil.containsKey(keyCopy))
 			sortedLineProfil.get(keyCopy).addAll(tmp);
 		else {
-			List<Text> words = new ArrayList<>();
+			List<Text> clients = new ArrayList<>();
 
-			words.addAll(tmp);
-			sortedLineProfil.put(keyCopy, words);
+			clients.addAll(tmp);
+			sortedLineProfil.put(keyCopy, clients);
 		}
-		
-		nbsortedWords+=tmp.size();
-		
-		// Nombre de lignes enregistrés atteint : on supprime le mot les plus grands profil (le premier dans sortedWords)
-		while (nbsortedWords > k) {
+
+		nbClients+=tmp.size();
+
+		while (nbClients > k) {
 			Double firstKey = sortedLineProfil.entrySet().iterator().next().getKey();
 			List<Text> lines = sortedLineProfil.get(firstKey);
 			lines.remove(lines.size() - 1);
-			nbsortedWords--;
+			nbClients--;
 			if (lines.isEmpty())
 				sortedLineProfil.remove(firstKey);
 		}
-			
+
 	}
 
 	/**
 	 * Méthode appelée à la fin de l'étape de reduce.
-	 * 
+	 *
 	 * Ici on envoie les mots dans la sortie, triés par ordre descendant.
 	 */
 	@Override
@@ -87,8 +86,8 @@ class ReduceB extends Reducer<DoubleWritable, Text, DoubleWritable, Text> {
 		while (i-- != 0) {
 			Double nbof = nbofs[i];
 
-			for (Text words : sortedLineProfil.get(nbof))
-				context.write(new DoubleWritable(nbof) , words);
+			for (Text clients : sortedLineProfil.get(nbof))
+				context.write(new DoubleWritable(nbof) , clients);
 		}
 	}
 }

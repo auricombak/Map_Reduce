@@ -1,4 +1,4 @@
-package TramBusNames;
+package TramBusNb;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -22,13 +22,13 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 //Pour chaque station, donner le nombre de trams et bus par jour.
 
-public class TramBusNames {
+public class TramBusNb {
 
 	private static final String INPUT_PATH = "input-TAM/";
 	private static final String OUTPUT_PATH = "output/NbTramBus";
-	private static final Logger LOG = Logger.getLogger(TramBusNames.class.getName());
+	private static final Logger LOG = Logger.getLogger(TramBusNb.class.getName());
 
-	
+
 	static {
 		System.setProperty("java.util.logging.SimpleFormatter.format", "%5$s%n%6$s");
 
@@ -64,7 +64,7 @@ public class TramBusNames {
 
 		}
 	}
-	
+
 	public static class Reduce extends Reducer<Text, IntWritable, Text, Text> {
 		@Override
 		public void reduce(Text key, Iterable<IntWritable> values, Context context)
@@ -92,7 +92,7 @@ public class TramBusNames {
 		job.setMapperClass(Map.class);
 		job.setReducerClass(Reduce.class);
 
-		job.setOutputValueClass(IntWritable.class); 
+		job.setOutputValueClass(IntWritable.class);
 
 		job.setInputFormatClass(TextInputFormat.class);
 		job.setOutputFormatClass(TextOutputFormat.class);
