@@ -28,7 +28,7 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 		private final static String emptyWords[] = { "" };
 		private final static IntWritable one = new IntWritable(1);
-		
+
 		public static boolean isDouble( String str ){
 			  try{
 			    Double.parseDouble( str );
@@ -37,7 +37,7 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 			    return false;
 			  }
 			}
-	    
+
 		@Override
 		public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
 			String oneCsvEntry = value.toString();
@@ -45,13 +45,13 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 			if (Arrays.equals(oneCsvEntryTokens, emptyWords))
 				return;
-			
+
 			if(isDouble(oneCsvEntryTokens[4])) {
 				Double distance = Double.parseDouble(oneCsvEntryTokens[4]);
 
 				context.write(new DoubleWritable(distance), one);
 
-			}		
+			}
 		}
 	}
 
@@ -62,22 +62,22 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 		@Override
 		public void setup(Context context) {}
-		
+
 		@Override
 		public void reduce(DoubleWritable key, Iterable<IntWritable> values, Context context)
 				throws IOException, InterruptedException {
-			
-			
 
-			
+
+
+
 			// On copie car l'objet key reste le même entre chaque appel du reducer
 			Double keyCopy = key.get();
-			
-			
+
+
 			int sum = 0;
 			for (IntWritable val : values)
 				sum ++;
-			
+
 
 			allRatios += keyCopy*sum;
 			totalBill += sum;
@@ -88,11 +88,11 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 		@Override
 		public void cleanup(Context context) throws IOException, InterruptedException {
 					System.out.println(allRatios + "&&" + totalBill);
-					context.write(new Text("Average trip distance in febuary = ") , new Text(String.format( "%.2f",allRatios/totalBill) + " Miles"));
-			
+					context.write(new Text("Average trip distance in january = ") , new Text(String.format( "%.2f",allRatios/totalBill) + " Miles"));
+
 		}
 	}
-	
+
 	public class AverageDistance {
 		private static final String INPUT_PATH = "input-Taxi/";
 		private static final String OUTPUT_PATH = "output/AvDistance-";

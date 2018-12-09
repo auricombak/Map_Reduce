@@ -29,7 +29,7 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 		private final static String emptyWords[] = { "" };
 		private final static IntWritable one = new IntWritable(1);
-		
+
 		public static boolean isDouble( String str ){
 			  try{
 			    Double.parseDouble( str );
@@ -38,7 +38,7 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 			    return false;
 			  }
 			}
-	    
+
 		@Override
 		public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
 			String oneCsvEntry = value.toString();
@@ -46,13 +46,13 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 			if (Arrays.equals(oneCsvEntryTokens, emptyWords))
 				return;
-			
-			if(isDouble(oneCsvEntryTokens[4])) {
+
+			if(isDouble(oneCsvEntryTokens[16])) {
 				Double price = Double.parseDouble(oneCsvEntryTokens[16]);
 
 				context.write(new DoubleWritable(price), one);
 
-			}		
+			}
 		}
 	}
 
@@ -62,13 +62,13 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 		@Override
 		public void setup(Context context) {}
-		
+
 		@Override
 		public void reduce(DoubleWritable key, Iterable<IntWritable> values, Context context)
 				throws IOException, InterruptedException {
-			
+
 			Double keyCopy = key.get();
-						
+
 			for (IntWritable val : values)
 				allPrices.add(keyCopy);
 
@@ -80,23 +80,23 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 					for(Double price: allPrices ) {
 						totalPrices+= price;
 					}
-					
+
 					Double averagePrices = totalPrices/allPrices.size();
 					double medianPrice;
 					// Get the middle value of the median, if size of array is peer, we get the n/2 and n/2+ which we divide by 2
 					if(allPrices.size() % 2 ==0 ) {
 						//peer
 						medianPrice = (allPrices.get(allPrices.size()/2) + allPrices.get(allPrices.size()/2+1))/2;
-						
+
 					}else {
 						//odd
 						medianPrice = allPrices.get(allPrices.size()/2+1);
 					}
 					context.write(new Text(" Median Price : " + String.format( "%.2f",medianPrice) + " Dollars") , new Text(" Average Price : " + String.format( "%.2f",averagePrices) + " Dollars"));
-			
+
 		}
 	}
-	
+
 	public class Average_MedianPrice {
 		private static final String INPUT_PATH = "input-Taxi/";
 		private static final String OUTPUT_PATH = "output/Average_MedianPrice-";

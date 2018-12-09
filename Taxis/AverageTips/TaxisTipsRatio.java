@@ -28,7 +28,7 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 		private final static String emptyWords[] = { "" };
 		private final static IntWritable one = new IntWritable(1);
-		
+
 		public static boolean isDouble( String str ){
 			  try{
 			    Double.parseDouble( str );
@@ -37,7 +37,7 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 			    return false;
 			  }
 			}
-	    
+
 		@Override
 		public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
 			String oneCsvEntry = value.toString();
@@ -45,7 +45,7 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 			if (Arrays.equals(oneCsvEntryTokens, emptyWords))
 				return;
-			
+
 			if(isDouble(oneCsvEntryTokens[13]) && isDouble(oneCsvEntryTokens[16])) {
 				Double tips = Double.parseDouble(oneCsvEntryTokens[13]);
 				Double total = Double.parseDouble(oneCsvEntryTokens[16]);
@@ -58,7 +58,7 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 						context.write(new DoubleWritable(0), one);
 					}
 				}
-			}		
+			}
 		}
 	}
 
@@ -69,46 +69,36 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 		@Override
 		public void setup(Context context) {}
-		
+
 		@Override
 		public void reduce(DoubleWritable key, Iterable<IntWritable> values, Context context)
 				throws IOException, InterruptedException {
-			
-			
 
-			
+
+
+
 			// On copie car l'objet key reste le même entre chaque appel du reducer
 			Double keyCopy = key.get();
-			
-			
+
+
 			int sum = 0;
 			for (IntWritable val : values)
 				sum ++;
-			
-//			System.out.println("###############");
-//			System.out.println(sum);
-//			System.out.println(keyCopy);
-//			System.out.println(keyCopy*sum);
-//			System.out.println("###############");
+
+
 			allRatios += keyCopy*sum;
-//			System.out.println("Sum = " + sum);
 			totalBill += sum;
-//			System.out.println("totalBill = " + totalBill);
+
 		}
 
-		/**
-		 * Méthode appelée à la fin de l'étape de reduce.
-		 * 
-		 * Ici on envoie les mots dans la sortie, triés par ordre descendant.
-		 */
+
 		@Override
 		public void cleanup(Context context) throws IOException, InterruptedException {
-					System.out.println(allRatios + "&&" + totalBill);
 					context.write(new Text("Average tips ration in febuary 2018 = ") , new Text(String.format( "%.2f",allRatios/totalBill) + "%"));
-			
+
 		}
 	}
-	
+
 	public class TaxisTipsRatio {
 		private static final String INPUT_PATH = "input-Taxi/";
 		private static final String OUTPUT_PATH = "output/Tips-";

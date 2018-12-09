@@ -1,4 +1,4 @@
-package DepartureFreq;
+package Amazon_Best_Reviewer;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -12,18 +12,18 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.Reducer.Context;
 
-class ReduceB extends Reducer<IntWritable, Text, IntWritable, Text> {
+class ReduceB extends Reducer<DoubleWritable, Text, Text, Text> {
+	
 
-
-
+	
 	/**
 	 * Map avec tri suivant l'ordre naturel de la clé (la clé représentant la fréquence d'un ou plusieurs mots).
 	 * Utilisé pour conserver les k mots les plus fréquents.
-	 *
+	 * 
 	 * Il associe une fréquence à une liste de mots.
 	 */
-	private TreeMap<Integer, List<Text>> datesPerFreq = new TreeMap<>();
-	private int nbsortedWords = 0;
+	private TreeMap<Double, List<Text>> reviewersPerRateAVG = new TreeMap<>();
+	private int nbReviewers = 0;
 	private int k;
 
 	/**
@@ -36,56 +36,55 @@ class ReduceB extends Reducer<IntWritable, Text, IntWritable, Text> {
 	}
 
 	@Override
-	public void reduce(IntWritable key, Iterable<Text> values, Context context)
+	public void reduce(DoubleWritable key, Iterable<Text> values, Context context)
 			throws IOException, InterruptedException {
-
-
+		
+		
 		// On copie car l'objet key reste le même entre chaque appel du reducer
-		int keyCopy = key.get();
-
+		double keyCopy = key.get();
+		
 		List tmp = new ArrayList();
 		for (Text val : values)
 			tmp.add(new Text(val));
 
 
 		// Fréquence déjà présente
-		if (datesPerFreq.containsKey(keyCopy))
-			datesPerFreq.get(keyCopy).addAll(tmp);
+		if (reviewersPerRateAVG.containsKey(keyCopy))
+			reviewersPerRateAVG.get(keyCopy).addAll(tmp);
 		else {
-			datesPerFreq.put(keyCopy, tmp);
+			reviewersPerRateAVG.put(keyCopy, tmp);
 		}
-		System.out.println(tmp.size());
-		nbsortedWords+=tmp.size();
-
+		nbReviewers+=tmp.size();
+		
 		// Nombre de dates enregistrés atteint : on supprime les dates ayant la plus petite frequence
-		while (nbsortedWords > k) {
-			Integer firstKey = datesPerFreq.firstEntry().getKey();
-			List<Text> lines = datesPerFreq.get(firstKey);
+		while (nbReviewers > k) {
+			Double firstKey = reviewersPerRateAVG.firstEntry().getKey();
+			List<Text> lines = reviewersPerRateAVG.get(firstKey);
 			lines.remove(lines.size() - 1);
-			nbsortedWords--;
+			nbReviewers--;
 			if (lines.isEmpty())
-				datesPerFreq.remove(firstKey);
+				reviewersPerRateAVG.remove(firstKey);
 		}
-
+			
 	}
 
 	/**
 	 * Méthode appelée à la fin de l'étape de reduce.
-	 *
+	 * 
 	 * Ici on envoie les mots dans la sortie, triés par ordre descendant.
 	 */
 	@Override
 	public void cleanup(Context context) throws IOException, InterruptedException {
-		Integer[] nbofs = datesPerFreq.keySet().toArray(new Integer[0]);
+		Double[] nbofs = reviewersPerRateAVG.keySet().toArray(new Double[0]);
 
 		// Parcours en sens inverse pour obtenir un ordre descendant
 		int i = nbofs.length;
 
 		while (i-- != 0) {
-			Integer nbof = nbofs[i];
+			Double nbof = nbofs[i];
 
-			for (Text zone : datesPerFreq.get(nbof))
-				context.write(new IntWritable(nbof) , new Text("Demandes de taxis au départ de la zone : " + zone.toString()));
+			for (Text name : reviewersPerRateAVG.get(nbof))
+				context.write(new Text("AVG_Help_Rate : " + String.format( "%.0f",(nbof*10)) + "/10") , new Text(name));
 		}
 	}
 }

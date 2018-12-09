@@ -36,7 +36,7 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 		private final static String emptyWords[] = { "" };
 		private final static IntWritable one = new IntWritable(1);
-		
+
 	    public static boolean isValidDate(String date) {
 	        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 	        dateFormat.setLenient(false);
@@ -47,44 +47,44 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 	        }
 	        return true;
 	    }
-	    
+
 		@Override
 		public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
 			String oneCsvEntry = value.toString();
 			String[] oneCsvEntryTokens = oneCsvEntry.split("\\,");
-			
+
 			if (Arrays.equals(oneCsvEntryTokens, emptyWords))
 				return;
-			
+
 			String paymentType = oneCsvEntryTokens[9];
-			
+
 			if (isValidDate(oneCsvEntryTokens[1])){
-				String [] splitDateDT = oneCsvEntryTokens[1].split("\\s+");		
-				String[] splitTime = splitDateDT[0].split("-");				
+				String [] splitDateDT = oneCsvEntryTokens[1].split("\\s+");
+				String[] splitTime = splitDateDT[0].split("-");
 				String day = splitTime[2];
 				context.write(new Text(day), new IntWritable(Integer.parseInt(paymentType)));
-				
-			}		
-		}	
+
+			}
+		}
 	}
 
 
 	class Reduce extends Reducer<Text, IntWritable, Text, Text> {
 
-		
-		
+
+
 		@Override
 		public void reduce(Text key, Iterable<IntWritable> values, Context context)
 				throws IOException, InterruptedException {
-			
-			
 
-			
+
+
+
 			// On copie car l'objet key reste le même entre chaque appel du reducer
 			String keyCopy = key.toString();
 
 			HashMap<Integer, Integer> hm = new HashMap();
-			
+
 			for (IntWritable val : values) {
 				if(hm.containsKey(val.get())) {
 					hm.put(val.get(), hm.get(val.get())+1);
@@ -92,7 +92,7 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 					hm.put(val.get(), 1);
 				}
 			}
-			
+
 			int max = 0;
 			int type = 0;
 			for (Entry<Integer,Integer> entry : hm.entrySet()) {
@@ -123,12 +123,12 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 				break;
 			}
 			if( !paymentMethod.isEmpty()) {
-				context.write(new Text("The " + keyCopy + " febuary / Most used payment Method is : "), new Text(paymentMethod));
+				context.write(new Text("The " + keyCopy + " january / Most used payment Method is : "), new Text(paymentMethod));
 			}
 
 		}
 	}
-	
+
 	public class PaymentMethodDay {
 		private static final String INPUT_PATH = "input-Taxi/";
 		private static final String OUTPUT_PATH = "output/PaymentMethod-";
