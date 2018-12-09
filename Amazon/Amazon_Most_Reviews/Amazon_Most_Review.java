@@ -1,4 +1,4 @@
-package peakHour;
+package Amazon_Most_Reviews;
 
 import java.io.IOException;
 import java.text.ParseException;
@@ -29,118 +29,101 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 
 
 	class Map extends Mapper<LongWritable, Text, Text, IntWritable> {
 
-		private final static String emptyWords[] = { "" };
 		private final static IntWritable one = new IntWritable(1);
 
-		 public static boolean isValidDate(String date) {
-		        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-		        dateFormat.setLenient(false);
-		        try {
-		            dateFormat.parse(date.trim());
-		        } catch (ParseException pe) {
-		            return false;
-		        }
-		        return true;
-		    }
+		@Override
+		public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
+			try {
+				JSONObject obj = new JSONObject(value.toString());
+				String name = obj.getString("reviewerName");
+				
+				context.write(new Text(name), one);
+				
 
-			@Override
-			public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException{
-
-				String line = value.toString();
-				String[] splited = line.split("\\,");
-
-				if (Arrays.equals(splited, emptyWords))
-					return;
-				if (isValidDate(splited[1])){
-
-					String [] splitDateDT = splited[1].split("\\s+");
-
-					String[] timeSplited = splitDateDT[1].split(":");
-					String hour = timeSplited[0];
-
-					context.write(new Text(hour), one);
-				}
-			}
+			}catch(JSONException e) {
+				// Do nothing
+			}	
+	}
 	}
 
 
 	class Reduce extends Reducer<Text, IntWritable, Text, Text> {
 
-		private TreeMap<Integer , List<Text>> hourFreq = new TreeMap<>();
-		private int nbsortedHours = 0;
+		private TreeMap<Integer , List<Text>> reviewerPerNbCmt = new TreeMap<>();
+		private int nbReviewers = 0;
 		private int k;
-
+		
 		@Override
 		public void setup(Context context) {
 			// On charge k
 			k = context.getConfiguration().getInt("k", 1);
 		}
-
-
+		
+		
 		@Override
 		public void reduce(Text key, Iterable<IntWritable> values, Context context)
 				throws IOException, InterruptedException {
 
-				Integer sum = 0;
-				Text KeyCopy = new Text(key);
+			Integer sum = 0;
+			Text KeyCopy = new Text(key);
 
-				for (IntWritable val : values)
-					sum ++;
-
-
-				// Fréquence déjà présente
-				if (hourFreq.containsKey(sum)){}
-					hourFreq.get(sum).add(KeyCopy);
-
-				}
-				else {
-					List<Text> hours = new ArrayList<>();
-					hours.add(KeyCopy);
-					hourFreq.put(sum, hours);
-				}
-				nbsortedHours++;
+			for (IntWritable val : values)
+				sum ++;
 
 
-				// Nombre d'heures enregistrés atteintes : on supprime l'heure la moins fréquente (le premier dans hourFreq)
-				while (nbsortedHours > k) {
-					Integer firstKey = hourFreq.firstKey();
-					List<Text> hours = hourFreq.get(firstKey);
-					hours.remove(hours.size() - 1);
-					nbsortedHours -- ;
+			// Fréquence déjà présente
+			if (reviewerPerNbCmt.containsKey(sum)) {
+				reviewerPerNbCmt.get(sum).add(KeyCopy);
+			}
+			else{
+				List<Text> names = new ArrayList<>();
+				names.add(KeyCopy);
+				reviewerPerNbCmt.put(sum, names);
+			}
+			nbReviewers++;
 
-					if (hours.isEmpty())
-						hourFreq.remove(firstKey);
-				}
+			// Nombre d'heures enregistrés atteintes : on supprime l'heure la moins fréquente (le premier dans hourFreq)
+			while (nbReviewers > k) {
+				Integer firstKey = reviewerPerNbCmt.firstKey();
+				List<Text> hours = reviewerPerNbCmt.get(firstKey);
+				hours.remove(hours.size() - 1);
+				nbReviewers -- ;
 
+				if (hours.isEmpty())
+					reviewerPerNbCmt.remove(firstKey);
+			}
+				
 		}
-
+		
 		@Override
 		public void cleanup(Context context) throws IOException, InterruptedException {
-
-			Integer[] nbofs = hourFreq.keySet().toArray(new Integer[0]);
+			
+			Integer[] nbofs = reviewerPerNbCmt.keySet().toArray(new Integer[0]);
 
 			// Parcours en sens inverse pour obtenir un ordre descendant
 			int i = nbofs.length;
 
 			while (i-- != 0) {
-				for (Text hour : hourFreq.get(nbofs[i])) {
-					context.write(new Text("From " + hour + " h during one hour " ), new Text( nbofs[i] + " Taxis in activity" ));
+				for (Text name : reviewerPerNbCmt.get(nbofs[i])) {
+					context.write(new Text( name + " with " ), new Text( nbofs[i] + " Comments" ));
 				}
 			}
-		}
+		} 
 
 	}
-
-
-	public class PeakHour {
-		private static final String INPUT_PATH = "input-Taxi/";
-		private static final String OUTPUT_PATH = "output/PeakHour-";
-		private static final Logger LOG = Logger.getLogger(PeakHour.class.getName());
+	
+	
+	public class Amazon_Most_Review {
+		private static final String INPUT_PATH = "input-amazon/";
+		private static final String OUTPUT_PATH = "output/BestReviewer/Most-";
+		private static final Logger LOG = Logger.getLogger(Amazon_Most_Review.class.getName());
 
 		static {
 			System.setProperty("java.util.logging.SimpleFormatter.format", "%5$s%n%6$s");
@@ -197,3 +180,5 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 	}
 }
+
+
